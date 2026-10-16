@@ -1,0 +1,517 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Medical Camp Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f7f6;
+            color: #243b35;
+        }
+
+        header {
+            background: #126b55;
+            color: white;
+            padding: 22px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            font-size: 23px;
+        }
+
+        header p {
+            font-size: 13px;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+
+        .logout {
+            background: white;
+            color: #126b55;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 7px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        main {
+            width: min(1100px, 92%);
+            margin: 35px auto;
+        }
+
+        .welcome {
+            margin-bottom: 25px;
+        }
+
+        .welcome h2 {
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            color: #687973;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #173b3510;
+        }
+
+        .stat-card p {
+            color: #687973;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card h3 {
+            font-size: 30px;
+            color: #126b55;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 3px 12px #173b3510;
+        }
+
+        .table-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .refresh {
+            border: none;
+            background: #126b55;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 14px 12px;
+            border-bottom: 1px solid #e8eeeb;
+            font-size: 14px;
+        }
+
+        th {
+            background: #eff7f4;
+            color: #31564a;
+        }
+
+        .camp-name {
+            display: inline-block;
+            background: #e4f4ed;
+            color: #126b55;
+            padding: 6px 9px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .delete-btn {
+            background: #ffeded;
+            color: #b42318;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            background: #eaf0ff;
+            color: #214f9a;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 10px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .status {
+            margin: 15px 0;
+            font-size: 14px;
+            color: #52665e;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 35px;
+            color: #687973;
+        }
+
+        footer {
+            text-align: center;
+            color: #75847e;
+            padding: 25px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 19px;
+            }
+
+            main {
+                margin-top: 24px;
+            }
+
+            .table-card {
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>🩺 Medical Camp Admin</h1>
+            <p>Medical Camp Registration Portal</p>
+        </div>
+        <button class="logout" id="logoutButton">Logout</button>
+    </header>
+
+    <main>
+        <section class="welcome">
+            <h2>Admin Dashboard</h2>
+            <p>View and manage camp participant registrations.</p>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <p>Total registrations</p>
+                <h3 id="totalCount">—</h3>
+            </div>
+
+            <div class="stat-card">
+                <p>General Health Camp</p>
+                <h3 id="generalCount">—</h3>
+            </div>
+
+            <div class="stat-card">
+                <p>Eye Check-up Camp</p>
+                <h3 id="eyeCount">—</h3>
+            </div>
+
+            <div class="stat-card">
+                <p>Women's Health Camp</p>
+                <h3 id="womenCount">—</h3>
+            </div>
+        </section>
+
+        <section class="table-card">
+            <div class="table-heading">
+                <h2>Participant Registrations</h2>
+                <button class="refresh" id="refreshButton">
+                    ↻ Refresh
+                </button>
+            </div>
+
+            <p class="status" id="statusMessage" role="status">
+                Loading registrations...
+            </p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Contact</th>
+                            <th>Camp</th>
+                            <th>Registered On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registrationTable"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        Medical Camp Registration Portal · Admin Panel
+    </footer>
+
+    <script>
+        const table = document.getElementById("registrationTable");
+        const statusMessage = document.getElementById("statusMessage");
+
+        const campNames = {
+            "general-health": "General Health",
+            "eye-checkup": "Eye Check-up",
+            "womens-health": "Women's Health"
+        };
+
+        async function checkSession() {
+            try {
+                const response = await fetch("/api/admin/session", {
+                    credentials: "same-origin"
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.authenticated) {
+                    window.location.replace("/admin.html");
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                window.location.replace("/admin.html");
+                return false;
+            }
+        }
+
+        async function loadRegistrations() {
+            statusMessage.textContent = "Loading registrations...";
+            table.replaceChildren();
+
+            try {
+                const response = await fetch("/api/registrations", {
+                    credentials: "same-origin"
+                });
+
+                if (response.status === 401) {
+                    window.location.replace("/admin.html");
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message || "Could not load registrations."
+                    );
+                }
+
+                const registrations = result.registrations || [];
+
+                document.getElementById("totalCount").textContent =
+                    registrations.length;
+
+                document.getElementById("generalCount").textContent =
+                    registrations.filter(
+                        item => item.camp === "general-health"
+                    ).length;
+
+                document.getElementById("eyeCount").textContent =
+                    registrations.filter(
+                        item => item.camp === "eye-checkup"
+                    ).length;
+
+                document.getElementById("womenCount").textContent =
+                    registrations.filter(
+                        item => item.camp === "womens-health"
+                    ).length;
+
+                if (registrations.length === 0) {
+                    statusMessage.textContent =
+                        "No registrations have been submitted yet.";
+
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+                    cell.colSpan = 6;
+                    cell.className = "empty";
+                    cell.textContent = "No participant records found.";
+                    row.appendChild(cell);
+                    table.appendChild(row);
+                    return;
+                }
+
+                statusMessage.textContent =
+                    `${registrations.length} registration(s) found.`;
+
+                registrations.forEach(registration => {
+                    const row = document.createElement("tr");
+
+                    const values = [
+                        registration.name,
+                        registration.age,
+                        registration.contact
+                    ];
+
+                    values.forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value ?? "";
+                        row.appendChild(cell);
+                    });
+
+                    const campCell = document.createElement("td");
+                    const badge = document.createElement("span");
+                    badge.className = "camp-name";
+                    badge.textContent =
+                        campNames[registration.camp] || registration.camp;
+                    campCell.appendChild(badge);
+                    row.appendChild(campCell);
+
+                    const dateCell = document.createElement("td");
+                    dateCell.textContent = registration.createdAt
+                        ? new Date(registration.createdAt).toLocaleDateString()
+                        : "—";
+                    row.appendChild(dateCell);
+
+                    const actionsCell = document.createElement("td");
+
+                    const editButton = document.createElement("button");
+                    editButton.className = "edit-btn";
+                    editButton.textContent = "Edit";
+                    editButton.addEventListener("click", () => {
+                        editRegistration(registration);
+                    });
+
+                    const deleteButton = document.createElement("button");
+                    deleteButton.className = "delete-btn";
+                    deleteButton.textContent = "Delete";
+                    deleteButton.addEventListener("click", () => {
+                        deleteRegistration(registration._id);
+                    });
+
+                    actionsCell.append(editButton, deleteButton);
+                    row.appendChild(actionsCell);
+
+                    table.appendChild(row);
+                });
+            } catch (error) {
+                statusMessage.textContent = error.message;
+            }
+        }
+
+        async function editRegistration(registration) {
+            const name = prompt("Participant name:", registration.name);
+            if (name === null) return;
+
+            const age = prompt("Participant age:", registration.age);
+            if (age === null) return;
+
+            const contact = prompt(
+                "10-digit contact number:",
+                registration.contact
+            );
+            if (contact === null) return;
+
+            const camp = prompt(
+                "Camp code: general-health, eye-checkup, or womens-health",
+                registration.camp
+            );
+            if (camp === null) return;
+
+            try {
+                const response = await fetch(
+                    `/api/registrations/${registration._id}`,
+                    {
+                        method: "PATCH",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ name, age, contact, camp })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || "Update failed.");
+                }
+
+                alert("Registration updated successfully.");
+                await loadRegistrations();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function deleteRegistration(id) {
+            if (!confirm("Are you sure you want to delete this registration?")) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/registrations/${id}`, {
+                    method: "DELETE",
+                    credentials: "same-origin"
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || "Delete failed.");
+                }
+
+                alert("Registration deleted successfully.");
+                await loadRegistrations();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        document.getElementById("refreshButton").addEventListener(
+            "click",
+            loadRegistrations
+        );
+
+        document.getElementById("logoutButton").addEventListener(
+            "click",
+            async () => {
+                try {
+                    await fetch("/api/admin/logout", {
+                        method: "POST",
+                        credentials: "same-origin"
+                    });
+                } finally {
+                    window.location.replace("/admin.html");
+                }
+            }
+        );
+
+        (async () => {
+            const authenticated = await checkSession();
+
+            if (authenticated) {
+                await loadRegistrations();
+            }
+        })();
+    </script>
+</body>
+</html>

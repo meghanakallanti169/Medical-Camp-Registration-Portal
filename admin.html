@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Medical Camp Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #e8f5f2, #eaf0ff);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 410px;
+            padding: 35px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon {
+            text-align: center;
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 25px;
+            color: #173b35;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #66736f;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #263b36;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccd8d4;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: 2px solid #21866c;
+            border-color: transparent;
+        }
+
+        .password-wrapper {
+            display: flex;
+            align-items: stretch;
+            margin-bottom: 20px;
+        }
+
+        .password-wrapper input {
+            flex: 1;
+            min-width: 0;
+            border-radius: 8px 0 0 8px;
+        }
+
+        .toggle-password {
+            width: 52px;
+            flex-shrink: 0;
+            border: 1px solid #ccd8d4;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            background: #f4f8f6;
+            color: #173b35;
+            font-size: 21px;
+            cursor: pointer;
+        }
+
+        .toggle-password:hover {
+            background: #e4eee9;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 13px;
+            background: #16785f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .login-button:hover {
+            background: #105d49;
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        #message {
+            margin-top: 18px;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 22px;
+            color: #16785f;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="login-card">
+        <div class="icon">🩺</div>
+
+        <h1>Admin Login</h1>
+        <p class="subtitle">Medical Camp Registration Portal</p>
+
+        <form id="loginForm">
+            <label for="username">Username</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Enter admin username"
+                autocomplete="username"
+                required
+            >
+
+            <label for="password">Password</label>
+
+            <div class="password-wrapper">
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter admin password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button
+                    type="button"
+                    id="togglePassword"
+                    class="toggle-password"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                    title="Show password"
+                >👁</button>
+            </div>
+
+            <button
+                type="submit"
+                id="loginButton"
+                class="login-button"
+            >
+                Login to Dashboard
+            </button>
+
+            <p id="message" role="status" aria-live="polite"></p>
+        </form>
+
+        <a href="/" class="back-link">← Back to Home</a>
+    </main>
+
+    <script>
+        const loginForm = document.getElementById("loginForm");
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        const togglePassword = document.getElementById("togglePassword");
+        const loginButton = document.getElementById("loginButton");
+        const message = document.getElementById("message");
+
+        // Show or hide the password
+        togglePassword.addEventListener("click", () => {
+            const isHidden = passwordInput.type === "password";
+
+            passwordInput.type = isHidden ? "text" : "password";
+
+            togglePassword.textContent = isHidden ? "🙈" : "👁";
+            togglePassword.setAttribute("aria-label",
+                isHidden ? "Hide password" : "Show password"
+            );
+            togglePassword.setAttribute("title",
+                isHidden ? "Hide password" : "Show password"
+            );
+            togglePassword.setAttribute("aria-pressed", String(isHidden));
+        });
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            message.textContent = "";
+            loginButton.disabled = true;
+            loginButton.textContent = "Logging in...";
+
+            try {
+                const response = await fetch("/api/admin/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({
+                        username: usernameInput.value.trim(),
+                        password: passwordInput.value
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    message.style.color = "#16785f";
+                    message.textContent = "Login successful!";
+                    
+                    // The dashboard will be connected in the next step.
+                    window.location.href = "/admin-dashboard.html";
+                    return;
+                }
+
+                message.style.color = "#c62828";
+                message.textContent =
+                    result.message || "Login failed. Please try again.";
+            } catch (error) {
+                message.style.color = "#c62828";
+                message.textContent =
+                    "Could not connect to the server. Check whether it is running.";
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = "Login to Dashboard";
+            }
+        });
+    </script>
+</body>
+</html>

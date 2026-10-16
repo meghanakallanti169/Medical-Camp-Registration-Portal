@@ -1,0 +1,741 @@
+/* ================= GENERAL ================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+    font-family: Arial, sans-serif;
+
+    color: #1f2937;
+
+    background-color: #f7fbfd;
+
+    line-height: 1.6;
+}
+
+
+
+/* ================= NAVIGATION ================= */
+
+header {
+    background-color: white;
+
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 1000;
+}
+
+
+.navbar {
+    max-width: 1200px;
+
+    margin: auto;
+
+    padding: 18px 30px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+
+.logo {
+    font-size: 25px;
+
+    font-weight: bold;
+
+    color: #087ea4;
+}
+
+
+.nav-links {
+    list-style: none;
+
+    display: flex;
+
+    gap: 30px;
+}
+
+
+.nav-links a {
+    text-decoration: none;
+
+    color: #374151;
+
+    font-weight: 600;
+
+    transition: 0.3s;
+}
+
+
+.nav-links a:hover {
+    color: #087ea4;
+}
+
+
+
+/* ================= HERO ================= */
+
+.hero {
+    min-height: 620px;
+
+    padding: 100px 30px;
+
+    display: flex;
+
+    align-items: center;
+
+    background: linear-gradient(
+        135deg,
+        #e5f7ff,
+        #ffffff
+    );
+}
+
+
+.hero-content {
+    max-width: 1200px;
+
+    width: 100%;
+
+    margin: auto;
+}
+
+
+.welcome-text {
+    color: #087ea4;
+
+    font-weight: bold;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 15px;
+}
+
+
+.hero h1 {
+    max-width: 750px;
+
+    font-size: 58px;
+
+    line-height: 1.1;
+
+    color: #12344d;
+
+    margin-bottom: 25px;
+}
+
+
+.hero h1 span {
+    display: block;
+
+    color: #087ea4;
+}
+
+
+.hero-description {
+    max-width: 650px;
+
+    font-size: 18px;
+
+    color: #596773;
+
+    margin-bottom: 35px;
+}
+
+
+
+/* ================= BUTTONS ================= */
+
+.hero-buttons {
+    display: flex;
+
+    gap: 15px;
+
+    flex-wrap: wrap;
+}
+
+
+.btn {
+    display: inline-block;
+
+    padding: 13px 25px;
+
+    border-radius: 8px;
+
+    text-decoration: none;
+
+    font-weight: bold;
+
+    transition: 0.3s;
+}
+
+
+.primary-btn {
+    background-color: #087ea4;
+
+    color: white;
+}
+
+
+.primary-btn:hover {
+    background-color: #065f7c;
+
+    transform: translateY(-2px);
+}
+
+
+.secondary-btn {
+    border: 2px solid #087ea4;
+
+    color: #087ea4;
+}
+
+
+.secondary-btn:hover {
+    background-color: #087ea4;
+
+    color: white;
+}
+
+
+
+/* ================= COMMON SECTION ================= */
+
+.section-heading {
+    text-align: center;
+}
+
+
+.section-heading p {
+    color: #087ea4;
+
+    font-weight: bold;
+
+    letter-spacing: 1.5px;
+
+    margin-bottom: 8px;
+}
+
+
+.section-heading h2 {
+    font-size: 36px;
+
+    color: #12344d;
+}
+
+
+
+/* ================= ABOUT ================= */
+
+.about {
+    padding: 90px 30px;
+
+    background-color: white;
+}
+
+
+.about-content {
+    max-width: 850px;
+
+    margin: 30px auto;
+
+    text-align: center;
+
+    color: #596773;
+
+    font-size: 17px;
+}
+
+
+.about-content p {
+    margin-bottom: 15px;
+}
+
+
+
+/* ================= INFORMATION CARDS ================= */
+
+.info-container {
+    max-width: 1100px;
+
+    margin: 50px auto 0;
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 25px;
+}
+
+
+.info-card {
+    background-color: #f7fbfd;
+
+    padding: 30px;
+
+    text-align: center;
+
+    border-radius: 12px;
+
+    border: 1px solid #e2edf1;
+
+    transition: 0.3s;
+}
+
+
+.info-card:hover {
+    transform: translateY(-5px);
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+
+.info-icon {
+    font-size: 40px;
+
+    margin-bottom: 15px;
+}
+
+
+.info-card h3 {
+    color: #12344d;
+
+    margin-bottom: 10px;
+}
+
+
+.info-card p {
+    color: #66727e;
+}
+
+
+
+/* ================= WHY MEDICAL CAMPS ================= */
+
+.why-camp {
+    padding: 90px 30px;
+
+    background-color: #f7fbfd;
+}
+
+
+.medical-points {
+    max-width: 1000px;
+
+    margin: 50px auto 0;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 25px;
+}
+
+
+.medical-point {
+    display: flex;
+
+    gap: 20px;
+
+    align-items: flex-start;
+
+    background-color: white;
+
+    padding: 25px;
+
+    border-radius: 12px;
+
+    border: 1px solid #e2edf1;
+
+    transition: 0.3s;
+}
+
+
+.medical-point:hover {
+    transform: translateY(-4px);
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+
+.medical-point span {
+    font-size: 35px;
+}
+
+
+.medical-point h3 {
+    color: #12344d;
+
+    margin-bottom: 8px;
+}
+
+
+.medical-point p {
+    color: #596773;
+
+    font-size: 15px;
+}
+
+
+
+/* ================= CAMP DETAILS ================= */
+
+.camps-section {
+    padding: 90px 30px;
+
+    background-color: #f5fbff;
+}
+
+
+.section-description {
+    max-width: 700px;
+
+    margin: 20px auto 0;
+
+    text-align: center;
+
+    color: #596773;
+
+    font-size: 17px;
+}
+
+
+
+/* ================= CAMP CARDS ================= */
+
+.camp-container {
+    max-width: 1100px;
+
+    margin: 45px auto 0;
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 25px;
+}
+
+
+.camp-card {
+    background-color: white;
+
+    padding: 30px;
+
+    border-radius: 12px;
+
+    text-align: left;
+
+    box-shadow:
+        0 5px 20px rgba(0, 0, 0, 0.08);
+
+    transition: 0.3s;
+
+    border: 1px solid #e7eef2;
+}
+
+
+.camp-card:hover {
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+
+.camp-icon {
+    font-size: 38px;
+
+    margin-bottom: 15px;
+}
+
+
+.camp-card h3 {
+    color: #087ea4;
+
+    margin-bottom: 20px;
+
+    font-size: 21px;
+}
+
+
+.camp-card p {
+    color: #596773;
+
+    margin-bottom: 10px;
+}
+
+
+.camp-register-btn {
+    display: inline-block;
+
+    margin-top: 15px;
+
+    padding: 10px 18px;
+
+    background-color: #087ea4;
+
+    color: white;
+
+    text-decoration: none;
+
+    font-weight: bold;
+
+    border-radius: 6px;
+
+    transition: 0.3s;
+}
+
+
+.camp-register-btn:hover {
+    background-color: #065f7c;
+}
+
+
+
+/* ================= REGISTRATION ================= */
+
+/*
+    Registration is HIDDEN when the page first loads.
+    JavaScript adds the "show" class when the user
+    clicks Registration or Register for Camp.
+*/
+
+
+.registration-section {
+    display: none;
+
+    padding: 90px 30px;
+
+    background-color: #eef9fc;
+}
+
+
+.registration-section.show {
+    display: block;
+}
+
+
+.registration-container {
+    max-width: 650px;
+
+    margin: 45px auto 0;
+
+    background-color: white;
+
+    padding: 40px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+
+.form-group {
+    margin-bottom: 22px;
+}
+
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #12344d;
+
+    font-weight: bold;
+}
+
+
+.form-group input,
+.form-group select {
+    width: 100%;
+
+    padding: 13px 15px;
+
+    border: 1px solid #d1dce1;
+
+    border-radius: 7px;
+
+    font-size: 15px;
+
+    outline: none;
+
+    transition: 0.3s;
+}
+
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #087ea4;
+
+    box-shadow:
+        0 0 0 3px rgba(8, 126, 164, 0.1);
+}
+
+
+.submit-btn {
+    width: 100%;
+
+    padding: 14px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background-color: #087ea4;
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+
+.submit-btn:hover {
+    background-color: #065f7c;
+}
+
+
+.confirmation-message {
+    margin-top: 20px;
+
+    text-align: center;
+
+    font-weight: bold;
+}
+
+
+
+/* ================= CONTACT ================= */
+
+.contact-section {
+    min-height: 400px;
+
+    padding: 90px 30px;
+
+    background-color: white;
+}
+
+
+
+/* ================= FOOTER ================= */
+
+footer {
+    background-color: #12344d;
+
+    color: white;
+
+    text-align: center;
+
+    padding: 35px 20px;
+}
+
+
+footer h3 {
+    font-size: 24px;
+
+    margin-bottom: 5px;
+}
+
+
+footer p {
+    color: #d9e7ed;
+}
+
+
+footer .copyright {
+    margin-top: 15px;
+
+    font-size: 14px;
+}
+
+
+
+/* ================= RESPONSIVE DESIGN ================= */
+
+@media (max-width: 900px) {
+
+    .camp-container,
+    .info-container {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+
+@media (max-width: 768px) {
+
+    .navbar {
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+
+    .nav-links {
+        gap: 15px;
+
+        flex-wrap: wrap;
+
+        justify-content: center;
+    }
+
+
+    .hero {
+        min-height: 550px;
+
+        padding: 80px 25px;
+    }
+
+
+    .hero h1 {
+        font-size: 42px;
+    }
+
+
+    .hero-description {
+        font-size: 16px;
+    }
+
+
+    .camp-container,
+    .info-container,
+    .medical-points {
+        grid-template-columns: 1fr;
+    }
+
+
+    .section-heading h2 {
+        font-size: 30px;
+    }
+
+
+    .registration-container {
+        padding: 25px;
+    }
+
+}
