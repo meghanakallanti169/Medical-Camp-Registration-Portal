@@ -5,21 +5,16 @@ const dotenv = require("dotenv");
 const path = require("path");
 const session = require("express-session");
 const bcrypt = require("bcryptjs");
+const MongoStore = require("connect-mongo").default;
+const { rateLimit } = require("express-rate-limit");
 
-// Load .env from the project folder
+// Load environment variables from the project folder
 dotenv.config({
     path: path.join(__dirname, ".env")
 });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Temporary debugging (never print passwords or database credentials)
-console.log("Admin username loaded:", process.env.ADMIN_USERNAME);
-console.log(
-    "Admin password loaded:",
-    Boolean(process.env.ADMIN_PASSWORD)
-);
 
 // Check required environment variables
 const requiredEnv = [
@@ -31,37 +26,30 @@ const requiredEnv = [
 
 for (const key of requiredEnv) {
     if (!process.env[key]) {
-        console.error(`Missing ${key} in .env file`);
+        console.error(`Missing required environment variable: ${key}`);
         process.exit(1);
     }
 }
 
+// Configure proxy support when deployed behind HTTPS proxy
+if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+}
+
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use(session({
-    name: "medicalcamp.sid",
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 1000
-    }
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({
+    extended: true,
+    limit: "10kb"
 }));
-
-// Serve frontend files
-app.use(express.static(__dirname));
 
 // Registration schema
 const registrationSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        maxlength: 100
     },
     age: {
         type: Number,
@@ -92,10 +80,34 @@ const Registration = mongoose.model(
     registrationSchema
 );
 
-// Will be initialized once when the server starts
+// Admin password hash, generated once at startup
 let adminPasswordHash;
 
-// Middleware to protect admin routes
+// Session configuration
+app.use(session({
+    name: "medicalcamp.sid",
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        collectionName: "sessions",
+        ttl: 60 * 60
+    }),
+
+    cookie: {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 1000
+    }
+}));
+
+// Serve frontend files
+app.use(express.static(__dirname));
+
+// Middleware to protect admin APIs
 function requireAdmin(req, res, next) {
     if (req.session?.isAdmin !== true) {
         return res.status(401).json({
@@ -107,7 +119,7 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-// Test API
+// Health-check endpoint
 app.get("/api/test", (req, res) => {
     res.json({
         success: true,
@@ -122,81 +134,90 @@ app.get("/api/admin/session", (req, res) => {
     });
 });
 
+// Limit repeated admin login attempts
+const adminLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Too many login attempts. Please try again later."
+    }
+});
+
 // ADMIN LOGIN
-app.post("/api/admin/login", async (req, res) => {
-    try {
-        const { username, password } = req.body;
+app.post(
+    "/api/admin/login",
+    adminLoginLimiter,
+    async (req, res) => {
+        try {
+            const { username, password } = req.body;
 
-        if (
-            typeof username !== "string" ||
-            typeof password !== "string"
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Enter a valid username and password."
-            });
-        }
-
-        const usernameMatches =
-            username === process.env.ADMIN_USERNAME;
-
-        const passwordMatches = await bcrypt.compare(
-            password,
-            adminPasswordHash
-        );
-
-        // TEMPORARY DIAGNOSTICS
-        console.log("Username matches:", usernameMatches);
-        console.log("Password matches:", passwordMatches);
-
-        if (!usernameMatches || !passwordMatches) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid username or password."
-            });
-        }
-
-        // Regenerate session after successful login
-        req.session.regenerate((err) => {
-            if (err) {
-                console.error("Session error:", err.message);
-
-                return res.status(500).json({
+            if (
+                typeof username !== "string" ||
+                typeof password !== "string"
+            ) {
+                return res.status(400).json({
                     success: false,
-                    message: "Could not create login session."
+                    message: "Enter a valid username and password."
                 });
             }
 
-            req.session.isAdmin = true;
+            const usernameMatches =
+                username === process.env.ADMIN_USERNAME;
 
-            req.session.save((saveError) => {
-                if (saveError) {
-                    console.error(
-                        "Session save error:",
-                        saveError.message
-                    );
+            const passwordMatches = await bcrypt.compare(
+                password,
+                adminPasswordHash
+            );
+
+            if (!usernameMatches || !passwordMatches) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Invalid username or password."
+                });
+            }
+
+            // Regenerate session after successful login
+            req.session.regenerate((err) => {
+                if (err) {
+                    console.error("Session regeneration failed.");
 
                     return res.status(500).json({
                         success: false,
-                        message: "Could not save login session."
+                        message: "Could not create login session."
                     });
                 }
 
-                return res.json({
-                    success: true,
-                    message: "Admin login successful."
+                req.session.isAdmin = true;
+
+                req.session.save((saveError) => {
+                    if (saveError) {
+                        console.error("Session save failed.");
+
+                        return res.status(500).json({
+                            success: false,
+                            message: "Could not save login session."
+                        });
+                    }
+
+                    return res.json({
+                        success: true,
+                        message: "Admin login successful."
+                    });
                 });
             });
-        });
-    } catch (error) {
-        console.error("Login error:", error.message);
+        } catch (error) {
+            console.error("Login error:", error.message);
 
-        return res.status(500).json({
-            success: false,
-            message: "An error occurred during login."
-        });
+            return res.status(500).json({
+                success: false,
+                message: "An error occurred during login."
+            });
+        }
     }
-});
+);
 
 // ADMIN LOGOUT
 app.post("/api/admin/logout", (req, res) => {
@@ -221,7 +242,7 @@ app.post("/api/admin/logout", (req, res) => {
     });
 });
 
-// PUBLIC: Register for a camp
+// PUBLIC: Register for a medical camp
 app.post("/api/registrations", async (req, res) => {
     try {
         const { name, age, contact, camp } = req.body;
@@ -229,6 +250,7 @@ app.post("/api/registrations", async (req, res) => {
         if (
             typeof name !== "string" ||
             !name.trim() ||
+            name.trim().length > 100 ||
             !Number.isInteger(Number(age)) ||
             !/^\d{10}$/.test(String(contact ?? "")) ||
             ![
@@ -279,209 +301,242 @@ app.post("/api/registrations", async (req, res) => {
 });
 
 // ADMIN ONLY: View all registrations
-app.get("/api/registrations", requireAdmin, async (req, res) => {
-    try {
-        const registrations = await Registration.find()
-            .select("-__v")
-            .sort({ createdAt: -1 });
+app.get(
+    "/api/registrations",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const registrations = await Registration.find()
+                .select("-__v")
+                .sort({ createdAt: -1 });
 
-        return res.json({
-            success: true,
-            count: registrations.length,
-            registrations
-        });
-    } catch (error) {
-        console.error("Fetch error:", error.message);
+            return res.json({
+                success: true,
+                count: registrations.length,
+                registrations
+            });
+        } catch (error) {
+            console.error("Fetch error:", error.message);
 
-        return res.status(500).json({
-            success: false,
-            message: "Could not fetch registrations."
-        });
+            return res.status(500).json({
+                success: false,
+                message: "Could not fetch registrations."
+            });
+        }
     }
-});
+);
 
 // ADMIN ONLY: View one registration
-app.get("/api/registrations/:id", requireAdmin, async (req, res) => {
-    try {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            return res.status(400).json({
+app.get(
+    "/api/registrations/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid registration ID."
+                });
+            }
+
+            const registration = await Registration.findById(
+                req.params.id
+            ).select("-__v");
+
+            if (!registration) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Registration not found."
+                });
+            }
+
+            return res.json({
+                success: true,
+                registration
+            });
+        } catch (error) {
+            console.error("Fetch error:", error.message);
+
+            return res.status(500).json({
                 success: false,
-                message: "Invalid registration ID."
+                message: "Could not fetch registration."
             });
         }
-
-        const registration = await Registration.findById(
-            req.params.id
-        ).select("-__v");
-
-        if (!registration) {
-            return res.status(404).json({
-                success: false,
-                message: "Registration not found."
-            });
-        }
-
-        return res.json({
-            success: true,
-            registration
-        });
-    } catch (error) {
-        console.error("Fetch error:", error.message);
-
-        return res.status(500).json({
-            success: false,
-            message: "Could not fetch registration."
-        });
     }
-});
+);
 
 // ADMIN ONLY: Update a registration
-app.patch("/api/registrations/:id", requireAdmin, async (req, res) => {
-    try {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid registration ID."
-            });
-        }
-
-        const allowedFields = ["name", "age", "contact", "camp"];
-        const updates = {};
-
-        for (const field of allowedFields) {
-            if (Object.hasOwn(req.body, field)) {
-                updates[field] = req.body[field];
+app.patch(
+    "/api/registrations/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid registration ID."
+                });
             }
-        }
 
-        if (Object.keys(updates).length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "No valid fields provided."
-            });
-        }
+            const allowedFields = [
+                "name",
+                "age",
+                "contact",
+                "camp"
+            ];
 
-        if (updates.name !== undefined) {
+            const updates = {};
+
+            for (const field of allowedFields) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        req.body,
+                        field
+                    )
+                ) {
+                    updates[field] = req.body[field];
+                }
+            }
+
+            if (Object.keys(updates).length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No valid fields provided."
+                });
+            }
+
+            if (updates.name !== undefined) {
+                if (
+                    typeof updates.name !== "string" ||
+                    !updates.name.trim() ||
+                    updates.name.trim().length > 100
+                ) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Enter a valid name."
+                    });
+                }
+
+                updates.name = updates.name.trim();
+            }
+
+            if (updates.age !== undefined) {
+                if (
+                    updates.age === "" ||
+                    !Number.isInteger(Number(updates.age)) ||
+                    Number(updates.age) < 1 ||
+                    Number(updates.age) > 120
+                ) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Age must be between 1 and 120."
+                    });
+                }
+
+                updates.age = Number(updates.age);
+            }
+
+            if (updates.contact !== undefined) {
+                if (!/^\d{10}$/.test(String(updates.contact))) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Contact must contain 10 digits."
+                    });
+                }
+
+                updates.contact = String(updates.contact);
+            }
+
             if (
-                typeof updates.name !== "string" ||
-                !updates.name.trim()
+                updates.camp !== undefined &&
+                ![
+                    "general-health",
+                    "eye-checkup",
+                    "womens-health"
+                ].includes(updates.camp)
             ) {
                 return res.status(400).json({
                     success: false,
-                    message: "Enter a valid name."
+                    message: "Invalid camp selection."
                 });
             }
 
-            updates.name = updates.name.trim();
-        }
+            const registration =
+                await Registration.findByIdAndUpdate(
+                    req.params.id,
+                    updates,
+                    {
+                        new: true,
+                        runValidators: true
+                    }
+                ).select("-__v");
 
-        if (updates.age !== undefined) {
-            if (
-                !Number.isInteger(Number(updates.age)) ||
-                Number(updates.age) < 1 ||
-                Number(updates.age) > 120
-            ) {
-                return res.status(400).json({
+            if (!registration) {
+                return res.status(404).json({
                     success: false,
-                    message: "Age must be between 1 and 120."
+                    message: "Registration not found."
                 });
             }
 
-            updates.age = Number(updates.age);
-        }
+            return res.json({
+                success: true,
+                message: "Registration updated successfully.",
+                registration
+            });
+        } catch (error) {
+            console.error("Update error:", error.message);
 
-        if (updates.contact !== undefined) {
-            if (!/^\d{10}$/.test(String(updates.contact))) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Contact must contain 10 digits."
-                });
-            }
-
-            updates.contact = String(updates.contact);
-        }
-
-        if (
-            updates.camp !== undefined &&
-            ![
-                "general-health",
-                "eye-checkup",
-                "womens-health"
-            ].includes(updates.camp)
-        ) {
-            return res.status(400).json({
+            return res.status(500).json({
                 success: false,
-                message: "Invalid camp selection."
+                message: "Could not update registration."
             });
         }
-
-        const registration = await Registration.findByIdAndUpdate(
-            req.params.id,
-            updates,
-            { new: true, runValidators: true }
-        ).select("-__v");
-
-        if (!registration) {
-            return res.status(404).json({
-                success: false,
-                message: "Registration not found."
-            });
-        }
-
-        return res.json({
-            success: true,
-            message: "Registration updated successfully.",
-            registration
-        });
-    } catch (error) {
-        console.error("Update error:", error.message);
-
-        return res.status(500).json({
-            success: false,
-            message: "Could not update registration."
-        });
     }
-});
+);
 
 // ADMIN ONLY: Delete a registration
-app.delete("/api/registrations/:id", requireAdmin, async (req, res) => {
-    try {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            return res.status(400).json({
+app.delete(
+    "/api/registrations/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid registration ID."
+                });
+            }
+
+            const registration =
+                await Registration.findByIdAndDelete(
+                    req.params.id
+                );
+
+            if (!registration) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Registration not found."
+                });
+            }
+
+            return res.json({
+                success: true,
+                message: "Registration deleted successfully."
+            });
+        } catch (error) {
+            console.error("Delete error:", error.message);
+
+            return res.status(500).json({
                 success: false,
-                message: "Invalid registration ID."
+                message: "Could not delete registration."
             });
         }
-
-        const registration = await Registration.findByIdAndDelete(
-            req.params.id
-        );
-
-        if (!registration) {
-            return res.status(404).json({
-                success: false,
-                message: "Registration not found."
-            });
-        }
-
-        return res.json({
-            success: true,
-            message: "Registration deleted successfully."
-        });
-    } catch (error) {
-        console.error("Delete error:", error.message);
-
-        return res.status(500).json({
-            success: false,
-            message: "Could not delete registration."
-        });
     }
-});
+);
 
 // Start server
 async function startServer() {
     try {
-        // Hash the password only once
         adminPasswordHash = await bcrypt.hash(
             process.env.ADMIN_PASSWORD,
             12
@@ -491,8 +546,8 @@ async function startServer() {
 
         console.log("MongoDB connected successfully.");
 
-        app.listen(PORT, () => {
-            console.log(`Server running at http://localhost:${PORT}`);
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log(`Server listening on port ${PORT}`);
         });
     } catch (error) {
         console.error("Startup error:", error.message);
